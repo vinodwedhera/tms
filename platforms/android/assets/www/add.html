@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="initial-scale=1,width=device-width" />
+        <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <title>Hello World</title>
+		<link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.5.min.css" />
+		<link rel="stylesheet" href="js/jw-jqm-cal.css" />
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+		<script type="text/javascript" src="js/jw-jqm-cal.js"></script>
+		<script type="text/javascript" src="js/jquery.mobile-1.4.5.min.js"></script>
+		<link rel="stylesheet" href="js/spinningwheel.css" type="text/css" media="all" />
+		<script type="text/javascript" src="js/spinningwheel-min.js?v=1.4"></script>
+    </head>
+    <body>
+   <div data-role="page" id="view-calendar" data-theme="c">
+
+<div data-role="header">
+<h1>TMS</h1>
+</div>
+
+<div data-role="content">
+	<div class="leftround w30">Work</div>
+	<div class="w30">Time-Off</div>
+	<div class="rightround w30">Holiday</div>
+	
+	<div class="clear">&nbsp;</div>
+	<div class="form">
+	
+	<div class="first">Date</div><div class="sec"><input type="date" name="date" id="date"></div>
+	<div class="first">Client</div><div class="sec"><input type="text" name="client" id="client" onfocus="client();"></div>
+	<div class="first">Project</div><div class="sec"><input type="text" name="project" id="project"></div>
+	<div class="first">Activity</div><div class="sec"><input type="text" name="activity" id="activity"></div>
+	<div class="first">Notes</div><div class="sec"><textarea name="notes" id="notes"></textarea></div>
+	</div>
+</div>
+   
+
+</div>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+		<script  type="text/javascript" >
+			function cancel() {
+			alert('cancelled!');
+			}
+			function client()
+			{
+				var m = { };
+				
+				var db = window.sqlitePlugin.openDatabase({name: "my.db"});
+		db.transaction(function(tx) {
+				//var unix = Math.round(new Date($("#date").val()).getTime()/1000);
+				//alert(unix);
+					tx.executeSql('SELECT ClientId, ClientName from Clients',[],function(tx, res)
+						{
+						
+						 var len = res.rows.length;
+						 for (var i = 0; i < len; ++i) {
+							var obj = res.rows.item(i);
+							m[obj.ClientId] = obj.ClientName;
+						  }
+						
+						
+						SpinningWheel.addSlot(m);
+						SpinningWheel.setCancelAction(cancel);
+						SpinningWheel.setDoneAction(function() { 
+						var results = SpinningWheel.getSelectedValues();
+						alert('values: ' + results.values.join(' ') + '<br />keys: ' + results.keys.join(', '));
+						});
+
+						SpinningWheel.open();
+						});
+				});
+			}
+		function pad(num, size) {
+				var s = num+"";
+				while (s.length < size) s = "0" + s;
+				return s;
+			}
+		</script>
+    </body>
+</html>

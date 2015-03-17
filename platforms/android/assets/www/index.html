@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+     KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
+        <meta name="viewport" content="initial-scale=1,width=device-width" />
+        <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <title>Hello World</title>
+		<link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.5.min.css" />
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+		<script type="text/javascript" src="js/jquery.mobile-1.4.5.min.js"></script>
+		<link rel="stylesheet" href="js/spinningwheel.css" type="text/css" media="all" />
+		<script type="text/javascript" src="js/spinningwheel-min.js?v=1.4"></script>
+    </head>
+    <body>
+		<div data-role="page" id="login">
+		<div data-position="fixed" data-role="header" data-theme="c">
+		
+		</div>
+		<div align="center" data-role="content" id="Div4" name="contentConfirmation">
+		<h1>
+		Login</h1>
+		<h2>
+		<a href="add.html" rel="external">ADD</a>
+		</h2>
+		<form id="userlogin" method="POST">
+			<div data-role="fieldcontain">
+				<label for="username">Username:*</label>
+				<input class="required" id="username" name="username" type="text" value="">          
+			</div>
+			<div data-role="fieldcontain">
+				<label for="password">Password:*</label>
+				<input id="password" name="password" type="password" value="">          
+			</div>
+			<div class="ui-grid-a">
+				
+				<a href="#" class="ui-btn ui-btn-a ui-btn-inline ui-icon-delete ui-btn-icon-left">cancel</a>
+				<a href="#" class="ui-btn ui-btn-b ui-btn-inline"  id="submit">Login</a>
+				
+			</div>
+		</form>
+		</div>
+		</div>
+
+        <script type="text/javascript" src="cordova.js"></script>
+		
+        <script type="text/javascript">
+		var db = '';
+		var flag = true;
+		var ts = Math.round(+new Date()/1000);
+			$(document).on('pageinit', '#login', function(){ 
+			/*///////////////////////////////////////////////////////////////////////////////////*/
+			 document.addEventListener('deviceready', function() {
+			
+			
+			////////////////////////////
+				
+			////////////////////////////
+			
+			 $.mobile.loading('show', {theme:"a", text:"Please wait...", textonly:true, textVisible: true});
+			db = window.sqlitePlugin.openDatabase({name: "my.db"});
+			 db.transaction(function(tx) {
+			 tx.executeSql('CREATE TABLE IF NOT EXISTS Setting (TableName text,LastUpdated text)');
+				
+				tx.executeSql("INSERT INTO Setting (LastUpdated) VALUES (?)", [ts-100000], function(tx, res) {
+			 		tx.executeSql('SELECT LastUpdated FROM Setting order by LastUpdated DESC limit 1', [],
+						function(tx, res)
+						{
+						
+							if((ts -  res.rows.item(0).LastUpdated)>86400)
+							{
+							flag = false;
+							}
+							else
+							{
+							$.mobile.loading('hide');	
+							window.location.href = 	"home.html";
+							return true;
+							}
+							//console.log(JSON.stringify(res));
+
+							// results is a http://dev.w3.org/html5/webdatabase/#sqlresultset .  
+							// It has insertId, rowsAffected, and rows, which is
+							// essentially (not exactly) an array of arrays. 
+							tablestructure(flag,tx)
+								
+						},
+						function(tx, res)
+						{
+						alert('Network error has occurred please try again!'+error);
+						flag = false;
+						tablestructure(flag,tx)
+						});
+						
+			});
+			});
+			
+			
+							
+		}, false);
+			
+			/*///////////////////////////////////////////////////////////////////////////////////*/
+        $(document).on('click', '#submit', function() { // catch the form's submit event
+					if($('#username').val().length > 0 && $('#password').val().length > 0){
+					
+									db.transaction(function(tx) {
+											 tx.executeSql("INSERT INTO Setting (TableName,LastUpdated) VALUES (?,?)", [$('#username').val(),Math.round(+new Date()/1000)], function(tx, res) {
+											   });
+										});
+						// Send data to server through the Ajax call
+						// action is functionality we want to call and outputJSON is our data
+						$.mobile.loading('show', {theme:"a", text:"Please wait...", textonly:true, textVisible: true});
+						
+						if(!flag)
+						{
+						
+							$.ajax({url: "http://192.168.1.60/tmsapi/user.php",
+								data:$('#userlogin').serialize(),
+								type: 'post',                  
+								cache: false, 
+								success: function (result) {
+								 
+								  result = JSON.parse(result);
+								/*to save User Details in DB*/		
+									console.log(result);								
+									value = result.Detail;
+										db.transaction(function(tx) {
+											 tx.executeSql("INSERT INTO UserDetail (UserId, LoginName,FirstName,LastName,Email,PhoneNo) VALUES (?,?,?,?,?,?)", [value.UserId,value.LoginName,value.FirstName,value.LastName,value.Email,value.PhoneNo], function(tx, res) {
+											   });
+										
+										
+													jQuery.each(result.Timesheets, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO PayPeriod (PayPeriodId,UserId,PayPeriodYear,PayPeriodStartDate,PayPeriodEndDate) VALUES (?,?,?,?,?)", [value.PayPeriodId,value.UserId,value.PayPeriodYear,value.PayPeriodStartDate,value.PayPeriodEndDate], function(tx, res) {
+													   });
+												
+													jQuery.each(value.detail, function( k, v )  {
+														
+														 tx.executeSql("INSERT INTO Timesheets (TimeSheetId,PayPeriodId,TimesheetStatusId,UserID,UserTypeID,ManagerID,ClientID,ProjectID,CompanyId) VALUES (?,?,?,?,?,?,?,?,?)", [v.TimeSheetId,value.PayPeriodId,v.TimesheetStatusId,v.UserID,v.UserTypeID,v.ManagerID,v.ClientID,v.ProjectID,v.CompanyId], function(tx, res) {
+														   });
+														
+														jQuery.each(v.detail, function( entryKey, entryValue )  {
+															
+																
+																 tx.executeSql("INSERT INTO TimesheetsEntry (Pk_SucActivityEntry_ID,TimeSheetId,Fk_Activity_ID,Fk_SubActivity_ID,EntryHours,User_Created,BillableHours, Description,LaborTypeId,NonBillableHours,EntryDate) VALUES (?,?,?,?,?,?,?,?,?,?,?)", [entryValue.Pk_SucActivityEntry_ID,v.TimeSheetId,entryValue.Fk_Activity_ID,entryValue.Fk_SubActivity_ID,entryValue.EntryHours,entryValue.User_Created,entryValue.BillableHours,entryValue.Description,entryValue.LaborTypeId,entryValue.NonBillableHours,entryValue.EntryDate], function(tx, res) {
+																   });
+															
+														
+															});
+													});
+													
+											});
+										},function(){alert("error")},function(){
+												if(result.status) {
+												//$.mobile.changePage("home.html",{reloadPage:true});   
+													$.mobile.loading('hide');
+												window.location.href = 	"home.html";	
+												window.location = 	"home.html";
+												
+											} else {
+												$.mobile.loading('hide');
+												alert('Logon unsuccessful!');
+											}
+										});
+										
+									
+									//alert(result);
+									
+									
+								},
+								error: function (request,error) {
+									// This callback function will trigger on unsuccessful action 
+									$.mobile.loading('hide');									
+									alert('Network error has occurred please try again!'+error);
+								}
+							});    
+						}
+					} else {
+						alert('Please fill all necessary fields');
+					}          
+					return false; // cancel original event to prevent form submitting
+				});   
+		});
+		
+			/*function done() {
+			var results = SpinningWheel.getSelectedValues();
+			alert('values: ' + results.values.join(' ') + '<br />keys: ' + results.keys.join(', '));
+			}
+
+			function cancel() {
+			alert('cancelled!');
+			}
+			function openit()
+			{
+			alert("done");
+			var now = new Date();
+				var hours = { };
+				var min = { };
+				var h = {};
+				var m = {}
+				h['Hours'] = 'Hours';
+				m['Minutes'] = 'Minutes';
+				for( var i = 0; i < 24; i += 1 ) {
+				hours[i] = pad(i,2);
+				}
+
+				for( i = 0; i < 60; i += 1 ) {
+				min[i] = pad(i,2);
+				}
+				
+
+
+				SpinningWheel.addSlot(hours, 'right', 24);
+				SpinningWheel.addSlot(h, '', '');
+				SpinningWheel.addSlot(min, 'right', 60);
+				SpinningWheel.addSlot(m, '', '');
+				
+				
+				SpinningWheel.setCancelAction(cancel);
+				SpinningWheel.setDoneAction(done);
+
+				SpinningWheel.open();
+			}
+		function pad(num, size) {
+				var s = num+"";
+				while (s.length < size) s = "0" + s;
+				return s;
+			}*/
+		function tablestructure(flag,tx)
+		{
+			
+			if(!flag)
+				{
+					tx.executeSql('DROP TABLE IF EXISTS clients');
+					tx.executeSql('DROP TABLE IF EXISTS Companies');
+					tx.executeSql('DROP TABLE IF EXISTS ClientCompany');
+					tx.executeSql('DROP TABLE IF EXISTS Projects');
+					tx.executeSql('DROP TABLE IF EXISTS Activity');
+					tx.executeSql('DROP TABLE IF EXISTS SubActivity');
+					tx.executeSql('DROP TABLE IF EXISTS ActtivitySubActivity');
+					
+					
+					
+					
+					tx.executeSql('CREATE TABLE IF NOT EXISTS Clients (ClientId integer primary key, ClientName text, ClientEmail text,CreatedDate INTEGER, ModifiedDate INTEGER)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS Companies (CompanyId integer primary key, CompanyName text, CompanyEmail text,CreatedDate INTEGER, ModifiedDate INTEGER)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS ClientCompany (ClientCompanyId integer primary key, ClientId integer, CompanyId integer,CreatedDate INTEGER, ModifiedDate INTEGER)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS Projects (ProjectId integer primary key,ProjectName text,ProjectCode text, ClientId integer, CreatedDate INTEGER, ModifiedDate INTEGER)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS Activity (Pk_Activity_ID integer primary key,Activity_Text text,Activity_Description text, Activity_Code integer, CreatedDate INTEGER, ModifiedDate INTEGER)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS SubActivity (Pk_SubActivity_ID integer primary key,SubActivity_Text text,SubActivity_Description text, SubActivity_Code integer, CreatedDate INTEGER, ModifiedDate INTEGER)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS ActtivitySubActivity (PK_Act_SAct_int_ID integer primary key,Fk_Activity_ID integer,Fk_SubActivity_ID integer , CreatedDate INTEGER, ModifiedDate INTEGER)');
+					
+					
+					
+					tx.executeSql('DROP TABLE IF EXISTS UserDetail');
+					tx.executeSql('DROP TABLE IF EXISTS PayPeriod');
+					tx.executeSql('DROP TABLE IF EXISTS Timesheets');
+					tx.executeSql('DROP TABLE IF EXISTS TimesheetsEntry');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS UserDetail (UserId integer primary key,LoginName text,FirstName text,LastName text,Email text,PhoneNo text,CreatedDate text, ModifiedDate text)');
+					tx.executeSql('CREATE TABLE IF NOT EXISTS PayPeriod (PayPeriodId integer primary key,UserId integer,PayPeriodYear integer,PayPeriodStartDate integer,PayPeriodEndDate integer,CreatedDate text, ModifiedDate text)');
+				
+					
+					tx.executeSql('CREATE TABLE IF NOT EXISTS Timesheets (TimeSheetId integer primary key,PayPeriodId integer,TimesheetStatusId integer,UserID integer,UserTypeID integer,ManagerID integer,ClientID integer, ProjectID integer,CompanyId integer)');
+				
+					
+					tx.executeSql('CREATE TABLE IF NOT EXISTS TimesheetsEntry (Pk_SucActivityEntry_ID integer primary key,TimeSheetId integer,Fk_Activity_ID integer,Fk_SubActivity_ID integer,EntryHours REAL,User_Created integer,BillableHours integer, Description text,LaborTypeId integer,NonBillableHours integer,EntryDate INTEGER)');
+				}
+				
+				if(!flag)
+					{
+					//$.mobile.loading('show', {theme:"a", text:"Please wait...", textonly:true, textVisible: true});
+					$.ajax({url: "http://192.168.1.60/tmsapi/test.php",
+										type: 'get',  
+										cache: false, 
+										success: function (result) {
+										 
+										 result = JSON.parse(result);
+										 console.log(result);
+											/*to save clients in DB*/
+											db.transaction(function(tx) {
+											jQuery.each(result.Clients, function( key, value )  {
+											 
+													 tx.executeSql("INSERT INTO Clients (ClientId, ClientName,ClientEmail,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?)", [value.ClientId,value.ClientName,value.ClientEmail,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													 // console.log("insertId: " + res.insertId + " -- probably 1");
+													 // console.log("rowsAffected: " + res.rowsAffected + " -- should be 1");
+													  
+															/*	  db.transaction(function(tx) {
+																	tx.executeSql("select ClientName from clients order by ClientId desc limit 1;", [], function(tx, res) {
+																	  console.log("res.rows.length: " + res.rows.length + " -- should be 1");
+																	  console.log("res.rows.item(0).ClientName: " + res.rows.item(0).ClientName + " -- should be 1");
+																	});
+																  });*/
+													  });
+													  });
+												
+											/*to save Companies in DB*/									
+											jQuery.each(result.Companies, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO Companies (CompanyId, CompanyName,CompanyEmail,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?)", [value.CompanyId,value.CompanyName,value.CompanyEmail,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													   });
+												});
+											
+											
+											/*to save Companies Client relation in DB*/									
+											jQuery.each(result.ClientCompany, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO ClientCompany (ClientCompanyId, ClientId,CompanyId,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?)", [value.ClientCompanyId,value.ClientId,value.CompanyId,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													   });
+												});
+											
+											
+											/*to save Projects in DB*/									
+											jQuery.each(result.Projects, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO Projects (ProjectId, ProjectName,ProjectCode,ClientId,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?,?)", [value.ProjectId,value.ProjectName,value.ProjectCode,value.ClientId,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													   });
+												});
+											
+											
+											/*to save Activity in DB*/									
+											jQuery.each(result.Activity, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO Activity (Pk_Activity_ID, Activity_Text,Activity_Description,Activity_Code,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?,?)", [value.Pk_Activity_ID,value.Activity_Text,value.Activity_Description,value.Activity_Code,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													   });
+												});
+											
+											
+											/*to save SubActivity in DB*/									
+											jQuery.each(result.SubActivity, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO SubActivity (Pk_SubActivity_ID,SubActivity_Text,SubActivity_Description, SubActivity_Code,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?,?)", [value.Pk_SubActivity_ID,value.SubActivity_Text,value.SubActivity_Description,value.SubActivity_Code,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													   });
+												});
+											
+											
+											/*to save ActtivitySubActivity in DB*/									
+											jQuery.each(result.ActtivitySubActivity, function( key, value )  {
+												
+													 tx.executeSql("INSERT INTO ActtivitySubActivity (PK_Act_SAct_int_ID,Fk_Activity_ID,Fk_SubActivity_ID,CreatedDate, ModifiedDate) VALUES (?,?,?,?,?)", [value.PK_Act_SAct_int_ID,value.Fk_Activity_ID,value.Fk_SubActivity_ID,value.CreatedDate,value.ModifiedDate], function(tx, res) {
+													   });
+												});
+												$.mobile.loading('hide');
+											});
+											
+													
+										},
+										error: function (request,error) {
+											// This callback function will trigger on unsuccessful action 
+											$.mobile.loading('hide');									
+											alert('Network error has occurred please try again!'+error);
+										}
+									});  
+									
+					}	
+				
+				//$.mobile.loading('hide');
+		}
+		</script>
+    </body>
+</html>
